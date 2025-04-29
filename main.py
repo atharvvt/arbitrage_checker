@@ -125,7 +125,8 @@ def get_status():
 
 @app.get("/result/{exchange_pair}")
 def get_arbitrage_result(exchange_pair: str):
-    result = arbitrage_results.get(exchange_pair)
+    normalized_pair = exchange_pair.replace("-", "_")
+    result = arbitrage_results.get(normalized_pair)
     
     if not result:
         return JSONResponse(content={"error": "Result not ready yet"}, status_code=202)
