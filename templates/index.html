@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arbitrage Monitor</title>
+  <style>
+    :root {
+      --bg-dark: #0f1216;
+      --bg-card: #1a1e24;
+      --text-primary: #e2e8f0;
+      --text-secondary: #94a3b8;
+      --accent-green: #10b981;
+      --accent-red: #ef4444;
+      --accent-blue: #3b82f6;
+      --border-color: #2d3748;
+      --input-bg: #252a31;
+    }
+
+    body {
+      font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+      background: var(--bg-dark);
+      color: var(--text-primary);
+      padding: 20px;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    header {
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+
+    h1 {
+      color: var(--text-primary);
+      font-size: 2.25rem;
+      margin-bottom: 0.5rem;
+      font-weight: 700;
+    }
+
+    .subtitle {
+      color: var(--text-secondary);
+      font-size: 1.1rem;
+      margin-top: 0;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1000px;
+    }
+
+    .controls-group {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .exchange-card {
+      background: var(--bg-card);
+      border-radius: 8px;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      border: 1px solid var(--border-color);
+    }
+
+    .exchange-title {
+      font-size: 1.1rem;
+      margin: 0 0 1rem 0;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: auto;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 0.75rem;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      border: none;
+    }
+
+    .btn-start {
+      background-color: rgba(16, 185, 129, 0.15);
+      color: var(--accent-green);
+      border: 1px solid var(--accent-green);
+    }
+
+    .btn-start:hover:not(:disabled) {
+      background-color: var(--accent-green);
+      color: #000;
+    }
+
+    .btn-stop {
+      background-color: rgba(239, 68, 68, 0.15);
+      color: var(--accent-red);
+      border: 1px solid var(--accent-red);
+    }
+
+    .btn-stop:hover:not(:disabled) {
+      background-color: var(--accent-red);
+      color: #000;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .log-container {
+      background: var(--bg-card);
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+      width: 100%;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .log-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+    }
+
+    .log-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin: 0;
+    }
+
+    #log {
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 6px;
+      padding: 1rem;
+      height: 400px;
+      width: 100%;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.85rem;
+      color: var(--text-primary);
+      scroll-behavior: smooth;
+    }
+
+    .action-button {
+      background-color: rgba(59, 130, 246, 0.15);
+      color: var(--accent-blue);
+      border: 1px solid var(--accent-blue);
+      border-radius: 6px;
+      padding: 0.75rem 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .action-button:hover:not(:disabled) {
+      background-color: var(--accent-blue);
+      color: #fff;
+    }
+
+    .action-button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 1rem;
+      width: 100%;
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+
+    .status-circle {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 6px;
+      background-color: #9ca3af;
+    }
+
+    .status-circle.active {
+      background-color: var(--accent-green);
+      box-shadow: 0 0 8px var(--accent-green);
+    }
+
+    /* Custom scrollbar */
+    #log::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    #log::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 4px;
+    }
+
+    #log::-webkit-scrollbar-thumb {
+      background: #4b5563;
+      border-radius: 4px;
+    }
+
+    #log::-webkit-scrollbar-thumb:hover {
+      background: #6b7280;
+    }
+
+    .input-container {
+      margin-bottom: 1.5rem;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+    }
+    
+    .input-wrapper {
+      position: relative;
+      width: 240px;
+    }
+    
+    .usdt-label {
+      color: var(--text-secondary);
+      font-weight: 600;
+      font-size: 0.9rem;
+      margin-right: 0.5rem;
+    }
+    
+    input[type="number"] {
+      width: 100%;
+      padding: 0.75rem 4rem 0.75rem 1rem;
+      background-color: var(--input-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      color: var(--text-primary);
+      font-size: 1rem;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    input[type="number"]:focus {
+      outline: none;
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+    }
+    
+    input[type="number"]::placeholder {
+      color: var(--text-secondary);
+      opacity: 0.7;
+    }
+    
+    .input-suffix {
+      position: absolute;
+      right: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-secondary);
+      font-weight: 600;
+      font-size: 0.9rem;
+      pointer-events: none;
+    }
+    
+    /* Remove spinner arrows for number input */
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    
+    input[type="number"] {
+      -moz-appearance: textfield;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <header>
+      <h1>🧠 Live Arbitrage Monitor</h1>
+      <p class="subtitle">Real-time arbitrage opportunities across cryptocurrency exchanges</p>
+    </header>
+    
+    <div class="input-container">
+      <div class="usdt-label">Investment Amount:</div>
+      <div class="input-wrapper">
+        <input type="number" id="usdt-amount-input" placeholder="Enter USDT amount" value="1500" min="1" />
+        <span class="input-suffix">USDT</span>
+      </div>
+    </div>
+
+    <div class="controls-group">
+      <div class="exchange-card">
+        <h3 class="exchange-title">
+          <span>Binance</span>
+          <span>↔️</span>
+          <span>Bybit</span>
+        </h3>
+        <div class="button-group">
+          <button id="start-binance-bybit" class="btn btn-start" onclick="startArbitrage('binance-bybit')">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+            Start
+          </button>
+          <button id="stop-binance-bybit" class="btn btn-stop" onclick="stopArbitrage('binance-bybit')" disabled>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="6" y="4" width="4" height="16"></rect>
+              <rect x="14" y="4" width="4" height="16"></rect>
+            </svg>
+            Stop
+          </button>
+        </div>
+      </div>
+
+      <div class="exchange-card">
+        <h3 class="exchange-title">
+          <span>Bybit</span>
+          <span>↔️</span>
+          <span>Bitget</span>
+        </h3>
+        <div class="button-group">
+          <button id="start-bybit-bitget" class="btn btn-start" onclick="startArbitrage('bybit-bitget')">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+            Start
+          </button>
+          <button id="stop-bybit-bitget" class="btn btn-stop" onclick="stopArbitrage('bybit-bitget')" disabled>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="6" y="4" width="4" height="16"></rect>
+              <rect x="14" y="4" width="4" height="16"></rect>
+            </svg>
+            Stop
+          </button>
+        </div>
+      </div>
+
+      <div class="exchange-card">
+        <h3 class="exchange-title">
+          <span>Crypto.com</span>
+          <span>↔️</span>
+          <span>Bitget</span>
+        </h3>
+        <div class="button-group">
+          <button id="start-cryptocom-bitget" class="btn btn-start" onclick="startArbitrage('cryptocom-bitget')">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+            Start
+          </button>
+          <button id="stop-cryptocom-bitget" class="btn btn-stop" onclick="stopArbitrage('cryptocom-bitget')" disabled>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="6" y="4" width="4" height="16"></rect>
+              <rect x="14" y="4" width="4" height="16"></rect>
+            </svg>
+            Stop
+          </button>
+        </div>
+      </div>
+
+      <div class="exchange-card">
+        <h3 class="exchange-title">
+          <span>KuCoin</span>
+          <span>↔️</span>
+          <span>Coinbase</span>
+        </h3>
+        <div class="button-group">
+          <button id="start-kucoin-coinbase" class="btn btn-start" onclick="startArbitrage('kucoin-coinbase')">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+            Start
+          </button>
+          <button id="stop-kucoin-coinbase" class="btn btn-stop" onclick="stopArbitrage('kucoin-coinbase')" disabled>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="6" y="4" width="4" height="16"></rect>
+              <rect x="14" y="4" width="4" height="16"></rect>
+            </svg>
+            Stop
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="log-container">
+      <div class="log-header">
+        <h3 class="log-title">Arbitrage Data</h3>
+        <button id="fetch-results" class="action-button" onclick="fetchData()" disabled>
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"></path>
+            <path d="M21 3v5h-5"></path>
+          </svg>
+          Refresh Data
+        </button>
+      </div>
+      <div id="log">Please select a pair to start monitoring...</div>
+    </div>
+
+    <div class="status-bar">
+      <div>
+        <span class="status-circle" id="status-indicator"></span>
+        <span id="status">Ready to monitor</span>
+      </div>
+      <div id="last-updated"></div>
+    </div>
+  </div>
+
+  <script>
+    let selectedPair = null;
+    let intervalId = null;
+
+    // Start the arbitrage process for selected pair
+    async function startArbitrage(pair) {
+      const usdtAmount = parseFloat(document.getElementById('usdt-amount-input')?.value) || 0;
+
+      if (usdtAmount <= 0) {
+        document.getElementById('status').textContent = "⚠️ Please enter a valid USDT amount.";
+        return;
+      }
+
+      try {
+        const response = await fetch(`/start/${pair}`, {
+          method: 'POST',
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ usdt_amount: usdtAmount })
+        });
+
+        const data = await response.json();
+        console.log("Start response:", data);
+
+        if (data.status && data.status.includes('started')) {
+          document.getElementById(`start-${pair}`).disabled = true;
+          document.getElementById(`stop-${pair}`).disabled = false;
+          document.getElementById('fetch-results').disabled = false;
+          document.getElementById('status').textContent = `${pair.replace('-', ' ↔ ')} started successfully`;
+          document.getElementById('status-indicator').classList.add('active');
+
+          selectPair(pair);
+        } else if (data.status) {
+          document.getElementById('status').textContent = `${pair.replace('-', ' ↔ ')} status: ${data.status}`;
+        } else {
+          document.getElementById('status').textContent = `⚠️ Unexpected response: ${JSON.stringify(data)}`;
+        }
+
+      } catch (error) {
+        console.error(error);
+        document.getElementById('status').textContent = `⚠️ Error starting ${pair}: ${error.message}`;
+      }
+    }
+
+    // Stop the arbitrage process for selected pair
+    async function stopArbitrage(pair) {
+      try {
+        const response = await fetch(`/stop/${pair}`, { method: 'POST' });
+        const data = await response.json();
+
+        // Update UI based on the response
+        if (data.status.includes('stopped')) {
+          document.getElementById(`start-${pair}`).disabled = false;
+          document.getElementById(`stop-${pair}`).disabled = true;
+          document.getElementById('fetch-results').disabled = true;
+          document.getElementById('status').textContent = `${pair.replace('-', ' ↔ ')} stopped successfully`;
+          document.getElementById('status-indicator').classList.remove('active');
+        }
+      } catch (error) {
+        console.error(error);
+        document.getElementById('status').textContent = `⚠️ Error stopping ${pair}: ${error.message}`;
+      }
+    }
+
+    // Fetch data from the backend
+    async function fetchData() {
+      if (!selectedPair) return;
+
+      const apiPair = selectedPair.replace(/-/g, "_");  // Converts e.g., binance-bybit -> binance_bybit
+
+      const logDiv = document.getElementById("log");
+      const lastUpdatedDiv = document.getElementById("last-updated");
+
+      logDiv.textContent = `⏳ Fetching data for ${apiPair.toUpperCase()}...`;
+
+      try {
+        const response = await fetch(`/result/${apiPair}`);
+        const data = await response.json();
+
+        if (data.error) {
+          logDiv.textContent = `⚠️ Error fetching data: ${data.error}`;
+        } else {
+          logDiv.textContent = `🔁 ${apiPair.toUpperCase()}:\n\n${JSON.stringify(data, null, 2)}`;
+        }
+
+        logDiv.scrollTop = logDiv.scrollHeight;
+        lastUpdatedDiv.textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+
+      } catch (error) {
+        logDiv.textContent = `⚠️ Error fetching data: ${error}`;
+        lastUpdatedDiv.textContent = `⚠️ Error at ${new Date().toLocaleTimeString()}`;
+      }
+    }
+
+
+    // Select the pair and set up the fetch process
+    function selectPair(pair) {
+      selectedPair = pair;
+      document.getElementById('log').textContent = `🔄 Loading ${pair.toUpperCase()} data...`;
+
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+
+      fetchData();
+      intervalId = setInterval(fetchData, 10000);
+    }
+  </script>
+</body>
+
+</html>
